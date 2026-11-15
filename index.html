@@ -1,109 +1,129 @@
-<html>
-	<head>
-		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
-		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-		<style>
-			h1 {
-				text-align: center;
-			}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homework 4: Cloth Simulation | MD Aeinul Islam</title>
+  <style>
+    :root { color-scheme: light; color: #202831; background: #f5f6f3; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 1rem/1.62 "Source Sans 3", system-ui, sans-serif; }
+    main { max-width: 56rem; margin: auto; padding: clamp(1.25rem, 5vw, 3rem); background: white; }
+    header { padding-bottom: 1.5rem; border-bottom: 2px solid #245c57; }
+    header p { margin: .25rem 0; }
+    h1, h2 { font-family: "Source Sans 3", system-ui, sans-serif; line-height: 1.16; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); margin: .35rem 0 .65rem; letter-spacing: -.035em; }
+    h2 { font-size: 1.55rem; margin: 0 0 .65rem; letter-spacing: -.02em; }
+    h3 { font-size: 1.1rem; margin: 1rem 0 .3rem; }
+    p { margin: 0 0 .85rem; }
+    .status, figcaption { color: #41535a; }
+    nav { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: .75rem 0 0; }
+    a { color: #245c57; text-underline-offset: .18em; }
+    section { margin-top: 1.75rem; padding-top: 1rem; border-top: 1px solid #dbe2de; }
+    .equation { padding: .4rem .7rem; border-left: 2px solid #245c57; font-family: Georgia, serif; overflow-wrap: anywhere; }
+    code { font-size: .93em; overflow-wrap: anywhere; }
+    ul { margin: .35rem 0 .85rem; padding-left: 1.35rem; }
+    figure { max-width: 42rem; margin: 1.15rem auto 1.35rem; }
+    img { display: block; width: 100%; height: auto; }
+    figcaption { margin-top: .4rem; font-size: .91rem; }
+    @page { margin: 15mm; }
+    @media print {
+      :root, main { background: white; color: black; }
+      main { padding: 0; max-width: none; }
+      nav { display: none; }
+      body { font-size: 10.5pt; line-height: 1.42; }
+      h1 { font-size: 24pt; }
+      h2, h3 { break-after: avoid; }
+      figure, .equation { break-inside: avoid; }
+      figure { max-width: 125mm; }
+      p, li { orphans: 3; widows: 3; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p>CS 184/284A, Fall 2026</p>
+    <h1>Homework 4: Cloth Simulation</h1>
+    <p>MD Aeinul Islam</p>
+  </header>
+  <nav aria-label="Report contents">
+    <a href="#overview">Overview</a><a href="#part-1">Part 1</a>
+    <a href="#part-2">Part 2</a><a href="#part-3">Part 3</a>
+    <a href="#part-4">Part 4</a><a href="#part-5">Part 5</a>
+  </nav>
 
-			.container {
-				margin: 0 auto;
-				padding: 60px 20%;
-			}
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>I built the cloth as a grid of point masses connected by springs. I used damped Verlet integration to move the free masses under gravity and spring forces. I then added contact with a sphere and a plane so the cloth could interact with objects in the scene.</p>
+  </section>
 
-			figure {
-				text-align: center;
-			}
+  <section id="part-1">
+    <h2>Part 1: Masses and Springs</h2>
+    <p>In <code>Cloth::buildGrid</code>, I filled the grid one row at a time. For a grid with <i>N</i> columns and <i>M</i> rows, column <i>i</i> and row <i>j</i> give the index <i>jN + i</i>. I spaced the columns by Δ<i>x</i> = <i>W</i> / (<i>N</i> − 1) and the rows by Δ<i>y</i> = <i>H</i> / (<i>M</i> − 1), where <i>W</i> and <i>H</i> are the cloth dimensions. If an axis had only one point, I used zero spacing on that axis.</p>
+    <p>For horizontal cloth, I put the masses at (<i>i</i>Δ<i>x</i>, 1, <i>j</i>Δ<i>y</i>). For vertical cloth, I used (<i>i</i>Δ<i>x</i>, <i>j</i>Δ<i>y</i>, <i>z</i>) with a small pseudorandom depth between −0.001 and 0.001. I marked a mass as pinned when its grid coordinates matched a pair in the scene’s pin list.</p>
+    <p>I finished the mass vector before storing any pointers to its elements. At each grid point, I connected structural springs to the immediate left and above, shearing springs to the upper left and upper right, and bending springs to points two columns left and two rows above. I checked each neighbor against the grid bounds. These offsets visit each pair once, and each spring stores the initial distance between its endpoints as its rest length.</p>
+    <p>The recorded 52 sanitizer cases checked layout, pins, spring types and counts, endpoints, and boundaries. The 50 × 50 grid had 2,500 masses, 4,900 structural springs, 4,802 shearing springs, and 4,800 bending springs.</p>
+    <p class="status">The no-shearing and shearing-only figures are pending. I will use these views to compare the row and column grid with the diagonal pattern.</p>
+    <figure>
+      <img src="assets/part_1_all_constraints.png" width="2066" height="1688" alt="Flat cloth wireframe with diagonals superimposed on the rows and columns">
+      <figcaption><strong>All constraints.</strong> The diagonals cross each grid cell, making the wireframe denser.</figcaption>
+    </figure>
+  </section>
 
-			img {
-				display: inline-block;
-			}
+  <section id="part-2">
+    <h2>Part 2: Numerical Integration</h2>
+    <p>I gave each point mass the same mass, <i>m</i> = ρ<i>WH</i> / (<i>NM</i>). At the start of a substep, I replaced its force accumulator with the sum of <i>m</i><b>a</b> for all external accelerations. Then I added the forces from enabled springs. For a spring from <i>a</i> to <i>b</i> of length ℓ and rest length ℓ<sub>0</sub>, the force on <i>a</i> is <i>k</i>(ℓ − ℓ<sub>0</sub>) times the unit direction from <i>a</i> to <i>b</i>. I added the opposite force to <i>b</i>. I used <i>k</i> = 0.2<i>k</i><sub>s</sub> for bending and <i>k</i> = <i>k</i><sub>s</sub> for the other springs. When the endpoints coincide, I skip the force because the direction is undefined.</p>
+    <p>For each free mass, I used the last two positions and the current net force to calculate the next position.</p>
+    <p class="equation"><b>x</b><sub>next</sub> = <b>x</b> + (1 − <i>d</i>)(<b>x</b> − <b>x</b><sub>prev</sub>) + (<b>F</b> / <i>m</i>)Δ<i>t</i><sup>2</sup></p>
+    <p>I converted the damping percentage to <i>d</i> by dividing it by 100. I used Δ<i>t</i> = 1 / (frames per second × substeps per frame), saved the old current position, and then assigned the new one. I skipped pinned masses in the position update.</p>
+    <p>I used one Provot stretch pass over all springs. If a spring was longer than 1.1ℓ<sub>0</sub>, I moved its free endpoints toward each other by the excess length in total. Two free endpoints shared the correction equally. If one endpoint was pinned, the other took the full correction. Two pinned endpoints stayed fixed. A later correction can move an endpoint shared by a spring I already checked, so one pass does not guarantee the bound everywhere at the end of the substep.</p>
+    <p>The earlier implementation checks passed 24 targeted cases and reproduced 52 grid cases. A headless run using the <code>pinned2.json</code> parameters took 1,200 substeps. The two pins stayed fixed, the free corner moved downward, and the positions and forces remained finite.</p>
+    <h3>Pending visual experiments</h3>
+    <p>For each low and high pair, change only the parameter under study and record the initial motion and resting shape.</p>
+    <ul>
+      <li>Compare low and high spring stiffness (<i>k</i><sub>s</sub>).</li>
+      <li>Compare low and high cloth density.</li>
+      <li>Compare low and high damping.</li>
+      <li>Capture the shaded final resting state of <code>pinned4.json</code>.</li>
+    </ul>
+  </section>
 
-			body {
-				font-family: 'Inter', sans-serif;
-			}
-		</style>
-	</head>
-	<body>
-		<div class="container">
-		<h1>CS184/284A Fall 2026 Homework 4 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+  <section id="part-3">
+    <h2>Part 3: Sphere and Plane Collisions</h2>
+    <p>For a sphere, I checked whether the current point lay on or inside the collision radius. I found its surface target by normalizing the direction from the center to the point and scaling by the radius. At the exact center I used the previous position to choose the direction, with positive <i>x</i> as a fallback if both positions were at the center.</p>
+    <p>For a plane, I took the signed distances <i>s</i><sub>prev</sub> and <i>s</i><sub>now</sub> from the previous and current positions. Opposite signs indicate a crossing. I found the intersection on the motion segment at <i>u</i> = <i>s</i><sub>prev</sub> / (<i>s</i><sub>prev</sub> − <i>s</i><sub>now</sub>) and moved the target by <code>SURFACE_OFFSET</code> = 0.0001 along the unit normal toward the starting side. If a mass starts exactly on the plane and moves into the negative half-space, the intersection is its previous position and I offset the target along the positive normal.</p>
+    <p>For either object, I took the displacement from the previous position to the target and applied a fraction of that displacement.</p>
+    <p class="equation"><b>x</b><sub>corrected</sub> = <b>x</b><sub>prev</sub> + (1 − friction)(<b>x</b><sub>target</sub> − <b>x</b><sub>prev</sub>)</p>
+    <p>In <code>Cloth::simulate</code>, I tested each free mass against the scene objects after Verlet integration and before the stretch pass.</p>
+    <p>I tested the boundary case at friction values of 0, 0.5, and 1. In headless runs of 8,100 substeps each, no masses were below the floor after plane contact or after the stretch pass in <code>plane.json</code> or either <code>selfCollision.json</code> run. One self-collision run used the scene thickness and the other used zero thickness for comparison. In the separate default sphere run, the deepest sampled penetration was 0.000111785 scene units.</p>
+    <h3>Pending shaded screenshots</h3>
+    <p>Capture the resting cloth in <code>sphere.json</code> at <i>k</i><sub>s</sub> = 500, 5,000, and 50,000, from the same initial scene, and capture <code>plane.json</code> at rest.</p>
+  </section>
 
-		<br>
-
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
-
-		<br>
-
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/fa26">cs184.eecs.berkeley.edu/fa26</a>
-
-		<figure>
-			<img src="assets/clothsim.png" alt="Cloth draped over sphere" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
-
-		<!--
-		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
-		-->
-
-		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
-
-		<h2>Part 1: Masses and springs</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
-		<div style="display: flex; flex-direction: column; align-items: center;">
-			<table style="width: 100%; text-align: center; border-collapse: collapse;">
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="assets/clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="assets/clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="assets/clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-				<td style="text-align: center;">
-				  <img src="assets/clothsim.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			</table>
-		</div>
-
-		<h2>Part 2: Simulation via numerical integration</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 3: Handling collisions with other objects</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 4: Handling self-collisions</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 5: Shaders</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>(Optional) Part 6: Extra Credit - Additional cloth simulation features!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
-		</div>
-	</body>
+  <section id="part-4">
+    <h2>Part 4: Self-Collisions</h2>
+    <p class="status">Implementation is complete. Report explanation and visual evidence are pending. Cover spatial hashing, map construction, and collision correction. Include at least three figures showing the fall and folds, plus density and stiffness comparisons.</p>
+  </section>
+  <section id="part-5">
+    <h2>Part 5: Shaders</h2>
+    <p class="status">Pending implementation and evidence. Explain what a shader does and the roles of vertex and fragment shaders. Include the ambient, diffuse, and specular Blinn–Phong terms separately and combined, a custom texture, bump mapping on cloth and sphere, displacement on the sphere, a comparison of bump and displacement, 16 × 16 and 128 × 128 sphere meshes, and mirror shading on the cloth and sphere.</p>
+  </section>
+  <section id="extra-credit">
+    <h2>Extra Credit</h2>
+    <p class="status">Reserved for completed extra credit.</p>
+  </section>
+  <section id="references">
+    <h2>References</h2>
+    <ul>
+      <li>UC Berkeley CS 184/284A, Fall 2026. Homework 4 assignment and Cloth Simulator starter code.</li>
+      <li>Xavier Provot, 1995. <cite>Deformation Constraints in a Mass-Spring Model to Describe Rigid Cloth Behaviour.</cite></li>
+    </ul>
+  </section>
+  <section id="llm-acknowledgment">
+    <h2>LLM Acknowledgment</h2>
+    <p class="status">Incomplete. Student statement pending.</p>
+  </section>
+</main>
+</body>
 </html>
