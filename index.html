@@ -131,12 +131,34 @@
     <h2>Part 3: Sphere and Plane Collisions</h2>
     <p>For a sphere, I checked whether the current point lay on or inside the collision radius. I found its surface target by normalizing the direction from the center to the point and scaling by the radius. At the exact center I used the previous position to choose the direction, with positive <i>x</i> as a fallback if both positions were at the center.</p>
     <p>For a plane, I took the signed distances <i>s</i><sub>prev</sub> and <i>s</i><sub>now</sub> from the previous and current positions. Opposite signs indicate a crossing. I found the intersection on the motion segment at <i>u</i> = <i>s</i><sub>prev</sub> / (<i>s</i><sub>prev</sub> − <i>s</i><sub>now</sub>) and moved the target by <code>SURFACE_OFFSET</code> = 0.0001 along the unit normal toward the starting side. If a mass starts exactly on the plane and moves into the negative half-space, the intersection is its previous position and I offset the target along the positive normal.</p>
-    <p>For either object, I took the displacement from the previous position to the target and applied a fraction of that displacement.</p>
+    <p>For either object, I took the displacement from the previous position to the target and applied a fraction of that displacement. With friction set to 0, the mass reaches the target. With friction set to 1, it stays at its previous position. Intermediate values reduce the motion toward the target.</p>
     <p class="equation"><b>x</b><sub>corrected</sub> = <b>x</b><sub>prev</sub> + (1 − friction)(<b>x</b><sub>target</sub> − <b>x</b><sub>prev</sub>)</p>
     <p>In <code>Cloth::simulate</code>, I tested each free mass against the scene objects after Verlet integration and before the stretch pass.</p>
     <p>I tested the boundary case at friction values of 0, 0.5, and 1. In headless runs of 8,100 substeps each, no masses were below the floor after plane contact or after the stretch pass in <code>plane.json</code> or either <code>selfCollision.json</code> run. One self-collision run used the scene thickness and the other used zero thickness for comparison. In the separate default sphere run, the deepest sampled penetration was 0.000111785 scene units.</p>
-    <h3>Pending shaded screenshots</h3>
-    <p>Capture the resting cloth in <code>sphere.json</code> at <i>k</i><sub>s</sub> = 500, 5,000, and 50,000, from the same initial scene, and capture <code>plane.json</code> at rest.</p>
+    <p>These position corrections run once per substep. The sphere check uses the current point position, and the plane check uses the previous and current positions to identify a crossing. Later stretch corrections can move masses again, so contact remains approximate.</p>
+
+    <h3>Cloth on the sphere</h3>
+    <p>I compared the resting views of <code>sphere.json</code> at three stiffness settings. Each capture shows Phong shading, GUI density 15 g/cm², and damping 0.2%. The scene uses sphere friction 0.3. The capture times were not recorded, so the comparison focuses on the visible drape and folds.</p>
+    <figure>
+      <img src="assets/part_3_manual_sphere_ks_500.png" width="1922" height="1078" alt="Cloth draped closely around a sphere with narrow hanging folds at stiffness 500 N/m">
+      <figcaption><strong><i>k</i><sub>s</sub> = 500 N/m.</strong> The cloth follows the rounded top and hangs in many narrow folds around the sides.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_3_manual_sphere_ks_5000.png" width="1974" height="1090" alt="Cloth draped over a sphere with wider folds at stiffness 5000 N/m">
+      <figcaption><strong><i>k</i><sub>s</sub> = 5,000 N/m.</strong> The hanging sections form fewer, wider folds, with sharper creases near the top.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_3_manual_sphere_ks_50000.png" width="1936" height="1100" alt="Cloth forming broad angular folds around a sphere at stiffness 50000 N/m">
+      <figcaption><strong><i>k</i><sub>s</sub> = 50,000 N/m.</strong> Broad folds spread outward from the top, giving the cloth a more angular shape around the sphere.</figcaption>
+    </figure>
+    <p>A larger spring constant produces a stronger restoring force for the same extension. It also increases bending stiffness because bending springs use 0.2<i>k</i><sub>s</sub>. The softer capture wraps closely around the sphere with fine folds, while the stiffer captures have broader folds and retain more shape away from the surface. The images illustrate this change in drape, but they do not provide a measurement of spring elongation.</p>
+
+    <h3>Cloth on the plane</h3>
+    <p>In <code>plane.json</code>, the plane passes through the origin with normal (0, 1, 0), so its surface is at <i>y</i> = 0. The resting view shows the cloth as a flat square supported by that surface. The plane friction is 0.5, which applies half of the displacement from the previous position to the contact target during a crossing correction.</p>
+    <figure>
+      <img src="assets/part_3_manual_plane_rest.png" width="2128" height="1520" alt="Small flat square of shaded cloth resting on a larger horizontal plane">
+      <figcaption><strong>Plane resting state.</strong> <code>plane.json</code>, <i>k</i><sub>s</sub> = 5,000 N/m, GUI density 15 g/cm², damping 0.2%, shown with Phong shading.</figcaption>
+    </figure>
   </section>
 
   <section id="part-4">
