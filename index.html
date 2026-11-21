@@ -285,7 +285,19 @@
   </section>
   <section id="extra-credit">
     <h2>Extra Credit</h2>
-    <p class="status">Reserved for completed extra credit.</p>
+    <p>I added a spatially varying wind force to deform the cloth sideways while it hangs from two pinned corners. The optional <code>wind_strength</code> field belongs inside the scene's <code>cloth</code> object and defaults to 0.0. A positive, finite value enables an additional force along +<i>Z</i> on each unpinned mass:</p>
+    <p class="equation"><i>F</i><sub>z,wind</sub> = <i>m</i> × wind_strength × [1 + 0.5 sin(2π remainder(<i>x</i>, 1))]</p>
+    <p>The remainder operation keeps the horizontal coordinate periodic before evaluating the sine. The force varies across the cloth as a function of position. It joins gravity and the spring forces in the damped Verlet update, so the cloth bends under the added load while the springs resist deformation. Pinned masses receive no wind force, and the position updates preserve their fixed locations. This is a simplified external-force model with a position-dependent field.</p>
+    <p>For the baseline, I used the original <code>pinned2.json</code>, which has wind disabled. For the wind experiment, I used a temporary scene outside the repository with <code>wind_strength</code> = 8.0 and the other scene parameters preserved. Both captures use the olive Custom shader described in Part 5 to make the surface shape visible.</p>
+    <figure>
+      <img src="assets/extra_manual_wind_baseline.png" width="2278" height="1318" alt="Custom-shaded cloth hanging from two pinned corners with wind disabled">
+      <figcaption><strong>Wind disabled.</strong> Original <code>pinned2.json</code>, wind strength 0.0. Folds gather below the pinned corners and across the upper drape.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/extra_manual_wind_enabled.png" width="2138" height="1140" alt="Custom-shaded cloth with broad diagonal deformation under wind strength 8.0">
+      <figcaption><strong>Wind enabled.</strong> Temporary two-pin scene, wind strength 8.0. Broad diagonal shading bands and the curved side edge show a different deformation.</figcaption>
+    </figure>
+    <p>The baseline has a pronounced upper fold, while the wind-enabled view shows a broader diagonal deformation through the center. Camera framing differs and capture times were not recorded, so the figures illustrate the change in shape without measuring motion speed or displacement.</p>
   </section>
   <section id="references">
     <h2>References</h2>
