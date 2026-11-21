@@ -200,7 +200,88 @@
   </section>
   <section id="part-5">
     <h2>Part 5: Shaders</h2>
-    <p class="status">Pending implementation and evidence. Explain what a shader does and the roles of vertex and fragment shaders. Include the ambient, diffuse, and specular Blinn–Phong terms separately and combined, a custom texture, bump mapping on cloth and sphere, displacement on the sphere, a comparison of bump and displacement, 16 × 16 and 128 × 128 sphere meshes, and mirror shading on the cloth and sphere.</p>
+    <p>Shader programs determine how the simulated mesh appears on screen. The starter's vertex shader takes positions, normals, tangents, and UV coordinates, transforms positions into world and clip space, and passes surface attributes onward. Rasterization interpolates those attributes across each triangle. My fragment shaders use them to compute lighting, sample textures, or create a procedural material. I reused the starter's shader discovery, mesh inputs, and texture-loading infrastructure.</p>
+
+    <h3>Blinn–Phong lighting</h3>
+    <p>I normalize the surface normal <b>n</b>, the direction toward the point light <b>l</b>, and the direction toward the camera <b>v</b>. The halfway direction is <b>h</b> = normalize(<b>l</b> + <b>v</b>). With material color <b>c</b> and attenuated light intensity <b>q</b> = <b>I</b> / max(<i>r</i>², 10<sup>−6</sup>), the three RGB contributions are:</p>
+    <p class="equation"><b>C</b><sub>ambient</sub> = 0.05<b>c</b><br><b>C</b><sub>diffuse</sub> = <b>c</b> ⊙ <b>q</b> max(<b>n</b> · <b>l</b>, 0)<br><b>C</b><sub>specular</sub> = 0.5<b>q</b> max(<b>n</b> · <b>h</b>, 0)<sup>32</sup></p>
+    <p>Here ⊙ multiplies RGB channels component by component. Ambient is a constant base color, diffuse describes how strongly the surface faces the light, and specular produces a concentrated highlight. The code adds specular only when both the light and viewer are in front of the surface and the halfway direction is valid. The complete Phong shader sums the three contributions with alpha 1. The isolated modes use the same terms and guards.</p>
+    <figure>
+      <img src="assets/part_5_manual_phong_ambient.png" width="2384" height="1446" alt="Dark cloth silhouette with PhongAmbient selected">
+      <figcaption><strong>Ambient only.</strong> The constant 0.05 contribution leaves a dark, nearly uniform cloth silhouette.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_phong_diffuse.png" width="2342" height="1300" alt="Cloth folds illuminated by the diffuse-only shader">
+      <figcaption><strong>Diffuse only.</strong> Broad light-to-dark changes reveal the cloth folds.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_phong_specular.png" width="2338" height="1306" alt="Mostly dark cloth with highlights along folds under PhongSpecular">
+      <figcaption><strong>Specular only.</strong> Narrow highlights pick out the upper fold and the sides against a dark surface.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_4_manual_ks_500.png" width="2224" height="1370" alt="Crumpled cloth on the plane with the complete Phong shader selected">
+      <figcaption><strong>Combined Blinn–Phong.</strong> Phong shading reveals both broad fold shading and brighter ridges in the Part 4 soft-cloth scene.</figcaption>
+    </figure>
+    <p>The combined example reuses the Part 4 <i>k</i><sub>s</sub> = 500 capture. Its scene and camera differ from the isolated views, so these images illustrate the lighting components without forming a matched four-view comparison.</p>
+
+    <h3>Original camouflage texture</h3>
+    <p>I generated <code>la_li_lu_le_lo_camo.png</code> as a 1024 × 1024 image in <code>generate_camo_texture.py</code>. Three layers of seeded periodic noise form broad organic patches in charcoal, forest green, olive, and khaki. A small periodic brightness variation adds a fabric-like weave. The generator creates the image from these functions, using no external artwork.</p>
+    <p>The existing image loader uploads this PNG as RGB to texture unit 1 with linear filtering and repeat wrapping. The vertex shader forwards UV coordinates, and <code>Texture.frag</code> samples <code>u_texture_1</code> at the interpolated UV. It writes the sampled color directly, giving the cloth its camouflage pattern without adding a lighting term.</p>
+    <figure>
+      <img src="assets/part_5_manual_custom_texture.png" width="2350" height="1454" alt="Cloth displaying the original green and khaki camouflage under Texture">
+      <figcaption><strong>Custom texture.</strong> The original woodland pattern follows the cloth UVs, with broad patches and a subtle weave.</figcaption>
+    </figure>
+    <h3>Bump and displacement mapping</h3>
+    <p>Both modes use the same non-default image, <code>la_li_lu_le_lo_weave_height.png</code>, through texture unit 2. I generated this 1024 × 1024 RGB height map with equal channels in <code>generate_weave_height.py</code>. Periodic cosine functions combine broad relief, twelve threads per axis with alternating warp and weft, and fine detail. The functions repeat across both image boundaries. Sharing this image keeps the surface pattern consistent between the two mapping methods.</p>
+    <p>For bump mapping, I read the red channel as height <i>H</i>(<i>u</i>, <i>v</i>). With decoded texture dimensions <i>T</i><sub>w</sub> and <i>T</i><sub>h</sub>, and scale <i>s</i> = Height × Normal, I calculate one-texel height differences:</p>
+    <p class="equation">Δ<i>u</i> = <i>s</i>[<i>H</i>(<i>u</i> + 1/<i>T</i><sub>w</sub>, <i>v</i>) − <i>H</i>(<i>u</i>, <i>v</i>)]<br>Δ<i>v</i> = <i>s</i>[<i>H</i>(<i>u</i>, <i>v</i> + 1/<i>T</i><sub>h</sub>) − <i>H</i>(<i>u</i>, <i>v</i>)]</p>
+    <p>I orthogonalize the tangent against the normal, normalize it, and form the bitangent as <b>b</b> = <b>n</b> × <b>t</b>. The perturbed normal is normalize([<b>t</b>, <b>b</b>, <b>n</b>] (−Δ<i>u</i>, −Δ<i>v</i>, 1)). These finite texture differences change the lighting normal while the bump vertex shader preserves the mesh positions.</p>
+    <figure>
+      <img src="assets/part_5_manual_bump_cloth.png" width="2054" height="1172" alt="Bump-mapped cloth with a fine fabric pattern and Normal 20 Height 0.1">
+      <figcaption><strong>Bump on cloth.</strong> Normal = 20, Height = 0.1. The weave adds fine bands of shading across the existing folds.</figcaption>
+    </figure>
+    <p>The sphere captures use the reported 16 × 16 and 128 × 128 mesh settings selected with <code>-o</code> and <code>-a</code>. Those resolution labels come from the capture record supplied with the images. Exact launch commands were not retained alongside the files. In both bump views, the fine height pattern appears inside the sphere while its outline remains the underlying polygonal mesh. The coarse outline is more faceted, and the denser mesh has a smoother boundary.</p>
+    <figure>
+      <img src="assets/part_5_manual_bump_sphere_16.png" width="1892" height="1398" alt="Bump-mapped sphere at the reported 16 by 16 resolution">
+      <figcaption><strong>Bump, 16 × 16 sphere.</strong> Normal = 20, Height = 0.1. Fine shading detail appears on the coarse mesh.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_bump_sphere_128.png" width="1724" height="1814" alt="Bump-mapped sphere at the reported 128 by 128 resolution">
+      <figcaption><strong>Bump, 128 × 128 sphere.</strong> Normal = 20, Height = 0.1. The sphere boundary is smoother while the weave remains visible.</figcaption>
+    </figure>
+    <p>Displacement samples the same red-channel height at each vertex and offsets the model-space position along the input normal:</p>
+    <p class="equation"><b>p</b>′ = <b>p</b> + <b>n</b><sub>input</sub> <i>H</i>(<i>u</i>, <i>v</i>) Height</p>
+    <p>The displaced position is transformed into world and clip space. Its fragment shader uses the same normal-perturbation and lighting equations as Bump. Height therefore controls geometric displacement and also contributes to the shading scale, while Normal controls only the shading perturbation.</p>
+    <p>The displacement captures show Normal = 100 and Height = 0.02. Their product is 2, matching the bump captures' 20 × 0.1 shading scale. Vertex displacement can alter the silhouette, and a denser mesh samples the relief at more positions. At this small height, both sphere views remain broadly round. The coarse view shows a more uneven, angular upper contour, while the 128 × 128 view has a smoother, subtly varied edge. The images support a modest geometric difference rather than a large change in shape.</p>
+    <figure>
+      <img src="assets/part_5_manual_displacement_sphere_16.png" width="1790" height="1676" alt="Displacement-mapped sphere at reported 16 by 16 resolution with Normal 100 Height 0.02">
+      <figcaption><strong>Displacement, 16 × 16 sphere.</strong> Normal = 100, Height = 0.02. The coarse mesh limits how smoothly vertex offsets represent the relief.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_displacement_sphere_128.png" width="1810" height="1598" alt="Displacement-mapped sphere at reported 128 by 128 resolution with Normal 100 Height 0.02">
+      <figcaption><strong>Displacement, 128 × 128 sphere.</strong> Normal = 100, Height = 0.02. More vertices represent the same height map with a smoother contour.</figcaption>
+    </figure>
+    <h3>Mirror shading</h3>
+    <p>I normalize the direction from the surface toward the camera as <b>w</b><sub>o</sub>, then calculate <code>reflect(-w_o, n)</code> using the normalized surface normal. This reflected direction samples the starter environment cubemap. As the view or surface orientation changes, the sampled environment changes. This is environment mapping, so the reflected scenery comes from the fixed cubemap rather than rays traced through the simulated objects.</p>
+    <figure>
+      <img src="assets/part_5_manual_mirror_cloth.png" width="2248" height="1490" alt="Mirror cloth reflecting sky and surrounding outdoor structures">
+      <figcaption><strong>Mirror on cloth.</strong> The outdoor environment bends into bright and dark bands along the folds.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_mirror_sphere.png" width="1756" height="1778" alt="Mirror sphere reflecting blue sky and a structure from the environment cubemap">
+      <figcaption><strong>Mirror on sphere.</strong> Blue sky and the surrounding structure wrap around the rounded surface.</figcaption>
+    </figure>
+    <h3>Procedural fabric shader</h3>
+    <p>For the Custom mode, I wanted an olive fabric appearance with a fine repeating pattern and soft sheen. The vertex shader retains the starter transformations. In the fragment shader, a 64-cell UV checker selects between two olive colors. I use <code>fwidth</code> to estimate the checker footprint and fade toward the average color as the detail becomes too small on screen.</p>
+    <p>I add a grazing-angle sheen proportional to (1 − |<b>n</b> · <b>v</b>|)³, along with a constant base, inverse-square diffuse illumination, and a halfway-vector specular term with coefficient 0.18 and exponent 24. All color variation is procedural. The camouflage image belongs to the separate Texture mode. The checker remains visible across the cloth and curves around the sphere, while lighting makes the folds and rounded shape readable.</p>
+    <figure>
+      <img src="assets/part_5_manual_custom_shader_cloth.png" width="2208" height="1410" alt="Custom shader showing olive checks and highlights on the hanging cloth">
+      <figcaption><strong>Custom fabric on cloth.</strong> Olive checks follow the folds, with brighter highlights along the upper drape.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_5_manual_custom_shader_sphere.png" width="1730" height="1818" alt="Custom shader showing olive checker variation on a sphere">
+      <figcaption><strong>Custom fabric on sphere.</strong> The same procedural checks wrap around the curved surface.</figcaption>
+    </figure>
   </section>
   <section id="extra-credit">
     <h2>Extra Credit</h2>
