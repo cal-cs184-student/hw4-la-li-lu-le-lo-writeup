@@ -163,7 +163,40 @@
 
   <section id="part-4">
     <h2>Part 4: Self-Collisions</h2>
-    <p class="status">Implementation is complete. Report explanation and visual evidence are pending. Cover spatial hashing, map construction, and collision correction. Include at least three figures showing the fall and folds, plus density and stiffness comparisons.</p>
+    <p>Checking every pair of point masses would take quadratic work as the grid grows. I used the starter's hash-map container to group nearby masses into buckets, then filled in the position hash, bucket construction, and self-collision correction.</p>
+    <p>For cloth width <i>W</i>, height <i>H</i>, and grid counts <i>N</i> and <i>M</i>, the cell dimensions are <i>w</i> = 3<i>W</i>/<i>N</i>, <i>h</i> = 3<i>H</i>/<i>M</i>, and <i>t</i> = max(<i>w</i>, <i>h</i>). I floor each position coordinate divided by its cell dimension and wrap the resulting index into 0 through 255, including negative indices. Calling these wrapped indices <i>b</i><sub>x</sub>, <i>b</i><sub>y</sub>, and <i>b</i><sub>z</sub>, I pack them into the float key below.</p>
+    <p class="equation">key = <i>b</i><sub>x</sub> + 256<i>b</i><sub>y</sub> + 65,536<i>b</i><sub>z</sub></p>
+    <p>After Verlet integration, I clear and rebuild the spatial map from the current positions when cloth thickness is positive. Each bucket stores pointers to its point masses. For each free mass, I retrieve candidates from its current hash bucket and skip the mass itself. Wrapping can put distant cells in the same bucket, so I still check the actual distance between candidates.</p>
+    <p>For two masses separated by distance <i>d</i> less than twice the cloth thickness, I add a correction of magnitude 2 × thickness − <i>d</i>, directed away from the other mass. Coincident masses use opposing <i>x</i>-axis fallback directions. I sum the corrections, divide by the number of close candidates, and divide again by the number of simulation substeps. This reduces abrupt position changes by applying a smaller correction on each substep. Object collisions and the stretch pass follow the self-collision pass.</p>
+    <p>The candidate search covers the same hash bucket. Nearby masses across a cell boundary can be missed, and later position corrections can change separations again. This keeps the method simple, but leaves self-contact approximate.</p>
+
+    <h3>Falling and folding</h3>
+    <p>The three captures below show the intended early, middle, and later progression in <code>selfCollision.json</code>. Each uses GUI density 15 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, and damping 0.2%. Their timestamps were not recorded, so I describe the visible shapes without assigning elapsed times.</p>
+    <figure id="part-4-default-early">
+      <img src="assets/part_4_manual_self_collision_early.png" width="2720" height="1534" alt="Cloth folded into a raised band over the ground plane">
+      <figcaption><strong>Early deformation.</strong> A raised band of wrinkles crosses the cloth, with a flatter section extending toward the plane.</figcaption>
+    </figure>
+    <figure id="part-4-default-middle">
+      <img src="assets/part_4_manual_self_collision_middle.png" width="2234" height="1250" alt="Cloth with a raised folded ridge and curled edges above the plane">
+      <figcaption><strong>Continued folding.</strong> A raised ridge and curled edges surround the folded section.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_4_manual_self_collision_rest.png" width="2392" height="1572" alt="Nearly flat cloth on the ground plane with small surface ripples">
+      <figcaption><strong>Later, near-rest view.</strong> The cloth is nearly flat on the plane, with small ripples remaining across its surface.</figcaption>
+    </figure>
+
+    <h3>Density and stiffness</h3>
+    <p>I increased the GUI density from 15 to 50 g/cm² while keeping <i>k</i><sub>s</sub> = 5,000 N/m and damping at 0.2%. These densities correspond to internal values of 150 and 500. Increasing mass reduces the spring acceleration for a given deformation, while gravity contributes the same acceleration. The geometric self-collision correction itself has no density factor. Higher density therefore changes how the cloth deforms into contact through the force update.</p>
+    <p>The density-50 capture shows a folded band with overlapping edges, as the default-setting sequence also does. This view uses Wireframe, so I compare the outline and folded geometry with the <a href="#part-4-default-middle">default middle view</a>. The different views and unrecorded times limit any conclusion about how much denser cloth folds or how quickly it settles.</p>
+    <figure>
+      <img src="assets/part_4_manual_density_50.png" width="2324" height="1502" alt="Wireframe cloth forming an overlapping folded band at GUI density 50">
+      <figcaption><strong>Higher density.</strong> GUI density 50 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, damping 0.2%, shown in Wireframe.</figcaption>
+    </figure>
+    <p>I also reduced <i>k</i><sub>s</sub> from 5,000 to 500 N/m at GUI density 15 g/cm². This weakens the restoring forces for a given extension and also reduces bending stiffness, which uses 0.2<i>k</i><sub>s</sub>. In the 500 N/m capture, small, irregular creases run through the middle and the left edge curls over. The <a href="#part-4-default-early">5,000 N/m view</a> has a broader raised fold. Both show the cloth folding onto itself, with the softer setting allowing more local deformation. The captures illustrate different shapes without establishing a difference in motion speed.</p>
+    <figure>
+      <img src="assets/part_4_manual_ks_500.png" width="2224" height="1370" alt="Soft cloth with irregular central creases and a curled left edge at stiffness 500 N/m">
+      <figcaption><strong>Lower stiffness.</strong> <i>k</i><sub>s</sub> = 500 N/m, GUI density 15 g/cm², damping 0.2%, shown with Phong shading.</figcaption>
+    </figure>
   </section>
   <section id="part-5">
     <h2>Part 5: Shaders</h2>
