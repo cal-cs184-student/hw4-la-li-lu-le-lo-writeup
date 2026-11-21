@@ -87,14 +87,44 @@
     <p>I converted the damping percentage to <i>d</i> by dividing it by 100. I used Δ<i>t</i> = 1 / (frames per second × substeps per frame), saved the old current position, and then assigned the new one. I skipped pinned masses in the position update.</p>
     <p>I used one Provot stretch pass over all springs. If a spring was longer than 1.1ℓ<sub>0</sub>, I moved its free endpoints toward each other by the excess length in total. Two free endpoints shared the correction equally. If one endpoint was pinned, the other took the full correction. Two pinned endpoints stayed fixed. A later correction can move an endpoint shared by a spring I already checked, so one pass does not guarantee the bound everywhere at the end of the substep.</p>
     <p>The earlier implementation checks passed 24 targeted cases and reproduced 52 grid cases. A headless run using the <code>pinned2.json</code> parameters took 1,200 substeps. The two pins stayed fixed, the free corner moved downward, and the positions and forces remained finite.</p>
-    <h3>Pending visual experiments</h3>
-    <p>For each low and high pair, change only the parameter under study and record the initial motion and resting shape.</p>
-    <ul>
-      <li>Compare low and high spring stiffness (<i>k</i><sub>s</sub>).</li>
-      <li>Compare low and high cloth density.</li>
-      <li>Compare low and high damping.</li>
-      <li>Capture the shaded final resting state of <code>pinned4.json</code>.</li>
-    </ul>
+    <h3>Spring stiffness</h3>
+    <p>I used the two pinned corners in <code>pinned2.json</code> to compare the cloth shapes. The baseline below uses <i>k</i><sub>s</sub> = 5,000 N/m, GUI density 15 g/cm², and damping 0.2%. The captures have no recorded elapsed times, so I compare their visible folds without treating them as synchronized frames.</p>
+    <figure id="part-2-baseline">
+      <img src="assets/part_2_manual_baseline.png" width="2084" height="1512" alt="Shaded cloth hanging from two corners with baseline simulation parameters">
+      <figcaption><strong>Baseline.</strong> <i>k</i><sub>s</sub> = 5,000 N/m, GUI density 15 g/cm², damping 0.2%. Folds gather beneath the pinned corners and along the upper edge.</figcaption>
+    </figure>
+    <p>At the initial flat shape, gravity starts the free masses moving downward. As the springs deform, a larger <i>k</i><sub>s</sub> produces a stronger restoring force for the same extension. The 500 N/m capture has deeper folds along the upper edge, while the 50,000 N/m capture has a shallower dip and a smoother center. These shapes are consistent with softer cloth deforming more under its weight as it moves toward rest. The stretch correction also limits elongation in both cases.</p>
+    <figure>
+      <img src="assets/part_2_manual_ks_500.png" width="1876" height="1126" alt="Two-corner cloth with pronounced upper folds at spring stiffness 500 N/m">
+      <figcaption><strong>Lower stiffness.</strong> <i>k</i><sub>s</sub> = 500 N/m, GUI density 15 g/cm², damping 0.2%.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_2_manual_ks_50000.png" width="1944" height="1090" alt="Two-corner cloth with a shallow upper dip at spring stiffness 50000 N/m">
+      <figcaption><strong>Higher stiffness.</strong> <i>k</i><sub>s</sub> = 50,000 N/m, GUI density 15 g/cm², damping 0.2%.</figcaption>
+    </figure>
+
+    <h3>Density</h3>
+    <p>I increased the GUI density from 15 to 50 g/cm² while keeping <i>k</i><sub>s</sub> = 5,000 N/m and damping at 0.2%. The GUI divides the internal density parameter by 10, so these settings correspond to internal values of 150 and 500. Increasing density increases each mass and its weight. Gravity still contributes the same acceleration, but the spring acceleration for a given deformation becomes smaller because it is divided by a larger mass. This lets the cloth deform further before spring forces balance its weight.</p>
+    <p>Compared with the <a href="#part-2-baseline">baseline</a>, the density-50 capture shows a deeper upper fold and stronger diagonal folds near the pinned corners. This resembles the softer-spring case because both changes reduce spring resistance relative to the cloth's weight.</p>
+    <figure>
+      <img src="assets/part_2_manual_density_50.png" width="1924" height="1074" alt="Cloth with a deep upper fold at GUI density 50 grams per square centimeter">
+      <figcaption><strong>Higher density.</strong> GUI density 50 g/cm², internal density 500, <i>k</i><sub>s</sub> = 5,000 N/m, damping 0.2%.</figcaption>
+    </figure>
+
+    <h3>Damping</h3>
+    <p>I compared the baseline's 0.2% damping with 1.0%. In the Verlet update, these settings multiply the previous displacement by 0.998 and 0.99 per substep. Increasing damping removes more of the carried-over motion, suppressing swinging and oscillation as the cloth approaches rest. Once the masses stop moving, that displacement term vanishes.</p>
+    <p>The 1.0% capture has a broad, smooth center and fewer pronounced upper folds than the baseline. A still image cannot establish how quickly the motion decayed, so this shape illustrates the higher-damping setting without providing a measured settling time.</p>
+    <figure>
+      <img src="assets/part_2_manual_damping_1_percent.png" width="2022" height="1074" alt="Two-corner cloth with a smooth center at damping 1.0 percent">
+      <figcaption><strong>Higher damping.</strong> Damping 1.0%, <i>k</i><sub>s</sub> = 5,000 N/m, GUI density 15 g/cm². The baseline figure shows the 0.2% setting.</figcaption>
+    </figure>
+
+    <h3>Four pinned corners</h3>
+    <p>In the resting view of <code>pinned4.json</code>, the four fixed corners support a smooth, bowl-shaped surface. The center sags under gravity while the corners remain at their initial positions.</p>
+    <figure>
+      <img src="assets/part_2_manual_pinned4_rest.png" width="2290" height="1660" alt="Shaded cloth sagging into a bowl between four pinned corners">
+      <figcaption><strong>Four-corner resting state.</strong> <code>pinned4.json</code>, <i>k</i><sub>s</sub> = 5,000 N/m, GUI density 15 g/cm², damping 0.2%, shown with Phong shading.</figcaption>
+    </figure>
   </section>
 
   <section id="part-3">
