@@ -64,10 +64,18 @@
     <p>For horizontal cloth, I put the masses at (<i>i</i>Δ<i>x</i>, 1, <i>j</i>Δ<i>y</i>). For vertical cloth, I used (<i>i</i>Δ<i>x</i>, <i>j</i>Δ<i>y</i>, <i>z</i>) with a small pseudorandom depth between −0.001 and 0.001. I marked a mass as pinned when its grid coordinates matched a pair in the scene’s pin list.</p>
     <p>I finished the mass vector before storing any pointers to its elements. At each grid point, I connected structural springs to the immediate left and above, shearing springs to the upper left and upper right, and bending springs to points two columns left and two rows above. I checked each neighbor against the grid bounds. These offsets visit each pair once, and each spring stores the initial distance between its endpoints as its rest length.</p>
     <p>The recorded 52 sanitizer cases checked layout, pins, spring types and counts, endpoints, and boundaries. The 50 × 50 grid had 2,500 masses, 4,900 structural springs, 4,802 shearing springs, and 4,800 bending springs.</p>
-    <p class="status">The no-shearing and shearing-only figures are pending. I will use these views to compare the row and column grid with the diagonal pattern.</p>
+    <p>I compared the flat cloth in <code>pinned2.json</code> using three spring configurations. The spring-type controls select which stored springs are drawn in the wireframe views.</p>
     <figure>
-      <img src="assets/part_1_all_constraints.png" width="2066" height="1688" alt="Flat cloth wireframe with diagonals superimposed on the rows and columns">
-      <figcaption><strong>All constraints.</strong> The diagonals cross each grid cell, making the wireframe denser.</figcaption>
+      <img src="assets/part_1_manual_no_shearing.png" width="2344" height="2060" alt="Cloth wireframe showing rows and columns with shearing disabled">
+      <figcaption><strong>Without shearing.</strong> Structural and bending enabled, shearing disabled. The bending connections span two grid intervals and overlap the structural lines, leaving a rectangular grid.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_1_manual_only_shearing.png" width="2344" height="2060" alt="Cloth wireframe showing only the two diagonal spring directions">
+      <figcaption><strong>Only shearing.</strong> Shearing enabled, structural and bending disabled. The two diagonal spring directions form a diamond pattern.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/part_1_manual_all_constraints.png" width="2390" height="2094" alt="Cloth wireframe with diagonal springs crossing the row and column grid">
+      <figcaption><strong>All constraints.</strong> Structural, shearing, and bending enabled. The diagonals cross the row and column grid, making the wireframe denser.</figcaption>
     </figure>
   </section>
 
