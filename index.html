@@ -55,7 +55,8 @@
 
   <section id="overview">
     <h2>Overview</h2>
-    <p>I built the cloth as a grid of point masses connected by springs. I used damped Verlet integration to move the free masses under gravity and spring forces. I then added contact with a sphere and a plane so the cloth could interact with objects in the scene.</p>
+    <p>I built a cloth simulator around a grid of point masses connected by structural, shearing, and bending springs. Damped Verlet integration moves the free masses under gravity and spring forces, while a stretch constraint limits spring elongation. Sphere and plane contact let the cloth drape over objects, and spatial hashing narrows the candidate search for approximate self-collision corrections. I used GPU shaders to give the simulated mesh different material appearances, including Blinn–Phong lighting, an original camouflage texture, a procedural fabric shader, height mapping, and environment reflections. An optional spatially varying wind force adds sideways deformation while the pinned corners stay fixed.</p>
+    <p>The stiffness comparisons showed how stronger restoring and bending forces change the drape from fine folds to broader shapes. The shading comparisons also made the distinction between surface appearance and geometry clear: bump mapping changes the lighting normal, while displacement moves vertices. A denser mesh can represent the same height map with a smoother contour.</p>
   </section>
 
   <section id="part-1">
