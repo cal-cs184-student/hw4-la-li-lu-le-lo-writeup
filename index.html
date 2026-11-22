@@ -188,16 +188,21 @@
     </figure>
 
     <h3>Density and stiffness</h3>
-    <p>I increased the GUI density from 15 to 50 g/cm² while keeping <i>k</i><sub>s</sub> = 5,000 N/m and damping at 0.2%. These densities correspond to internal values of 150 and 500. Increasing mass reduces the spring acceleration for a given deformation, while gravity contributes the same acceleration. The geometric self-collision correction itself has no density factor. Higher density therefore changes how the cloth deforms into contact through the force update.</p>
-    <p>The density-50 capture shows a folded band with overlapping edges, as the default-setting sequence also does. This view uses Wireframe, so I compare the outline and folded geometry with the <a href="#part-4-default-middle">default middle view</a>. The different views and unrecorded times limit any conclusion about how much denser cloth folds or how quickly it settles.</p>
+    <p>I used the Normal shader for these three views of <code>selfCollision.json</code>, so surface orientation is shown by color. All three use damping 0.2%, 90 frames/s, and 30 steps/frame. I advanced the frames manually; the views have similar camera angles but do not represent identical simulation times.</p>
     <figure>
-      <img src="assets/part_4_manual_density_50.png" width="2324" height="1502" alt="Wireframe cloth forming an overlapping folded band at GUI density 50">
-      <figcaption><strong>Higher density.</strong> GUI density 50 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, damping 0.2%, shown in Wireframe.</figcaption>
+      <img src="assets/part_4_self_collision_baseline_matched.png" width="2568" height="1334" alt="Normal-shaded self-collision cloth with a raised wrinkled ridge at density 15 and stiffness 5000">
+      <figcaption><strong>Comparison baseline.</strong> GUI density 15 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m. A raised, wrinkled ridge crosses the folded cloth.</figcaption>
     </figure>
-    <p>I also reduced <i>k</i><sub>s</sub> from 5,000 to 500 N/m at GUI density 15 g/cm². This weakens the restoring forces for a given extension and also reduces bending stiffness, which uses 0.2<i>k</i><sub>s</sub>. In the 500 N/m capture, small, irregular creases run through the middle and the left edge curls over. The <a href="#part-4-default-early">5,000 N/m view</a> has a broader raised fold. Both show the cloth folding onto itself, with the softer setting allowing more local deformation. The captures illustrate different shapes without establishing a difference in motion speed.</p>
+    <p>I increased the GUI density from 15 to 50 g/cm² while keeping <i>k</i><sub>s</sub> = 5,000 N/m. These densities correspond to internal values of 150 and 500. Increasing mass reduces the spring acceleration for a given deformation, while gravity contributes the same acceleration. The geometric self-collision correction itself has no density factor. Higher density therefore changes how the cloth deforms into contact through the force update.</p>
+    <p>The density-50 view shows two long folded sections with purple-facing surfaces beside a greener extension. The baseline has a more compact raised ridge. These are visible differences in the captured shapes, rather than a measurement of how density changes folding speed or extent.</p>
     <figure>
-      <img src="assets/part_4_manual_ks_500.png" width="2224" height="1370" alt="Soft cloth with irregular central creases and a curled left edge at stiffness 500 N/m">
-      <figcaption><strong>Lower stiffness.</strong> <i>k</i><sub>s</sub> = 500 N/m, GUI density 15 g/cm², damping 0.2%, shown with Phong shading.</figcaption>
+      <img src="assets/part_4_self_collision_density50_matched.png" width="2386" height="1352" alt="Normal-shaded folded cloth with purple-facing sections at density 50 and stiffness 5000">
+      <figcaption><strong>Higher density.</strong> GUI density 50 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, shown with the Normal shader.</figcaption>
+    </figure>
+    <p>I also reduced <i>k</i><sub>s</sub> from 5,000 to 500 N/m at GUI density 15 g/cm². This weakens the restoring forces for a given extension and also reduces bending stiffness, which uses 0.2<i>k</i><sub>s</sub>. The 500 N/m view shows a narrow, irregular central ridge and a broad section extending toward the lower right. Both settings show folds and changing surface orientations; their different simulation progress limits a direct comparison of deformation.</p>
+    <figure>
+      <img src="assets/part_4_self_collision_ks500_matched.png" width="2702" height="1550" alt="Normal-shaded cloth with an irregular central ridge at density 15 and stiffness 500">
+      <figcaption><strong>Lower stiffness.</strong> <i>k</i><sub>s</sub> = 500 N/m, GUI density 15 g/cm², shown with the Normal shader.</figcaption>
     </figure>
   </section>
   <section id="part-5">
@@ -210,21 +215,21 @@
     <p>Here ⊙ multiplies RGB channels component by component. Ambient is a constant base color, diffuse describes how strongly the surface faces the light, and specular produces a concentrated highlight. The code adds specular only when both the light and viewer are in front of the surface and the halfway direction is valid. The complete Phong shader sums the three contributions with alpha 1. The isolated modes use the same terms and guards.</p>
     <figure>
       <img src="assets/part_5_manual_phong_ambient.png" width="2384" height="1446" alt="Dark cloth silhouette with PhongAmbient selected">
-      <figcaption><strong>Ambient only.</strong> The constant 0.05 contribution leaves a dark, nearly uniform cloth silhouette.</figcaption>
+      <figcaption><strong>Ambient only.</strong> The constant 5% material-color contribution produces a dark, uniform cloth silhouette because it does not depend on surface orientation.</figcaption>
     </figure>
     <figure>
-      <img src="assets/part_5_manual_phong_diffuse.png" width="2342" height="1300" alt="Cloth folds illuminated by the diffuse-only shader">
+      <img src="assets/part_5_phong_diffuse_matched.png" width="2064" height="1138" alt="Two-pin cloth with broad fold shading and PhongDiffuse selected">
       <figcaption><strong>Diffuse only.</strong> Broad light-to-dark changes reveal the cloth folds.</figcaption>
     </figure>
     <figure>
-      <img src="assets/part_5_manual_phong_specular.png" width="2338" height="1306" alt="Mostly dark cloth with highlights along folds under PhongSpecular">
+      <img src="assets/part_5_phong_specular_matched.png" width="2026" height="1142" alt="Dark two-pin cloth with fold highlights and PhongSpecular selected">
       <figcaption><strong>Specular only.</strong> Narrow highlights pick out the upper fold and the sides against a dark surface.</figcaption>
     </figure>
     <figure>
-      <img src="assets/part_4_manual_ks_500.png" width="2224" height="1370" alt="Crumpled cloth on the plane with the complete Phong shader selected">
-      <figcaption><strong>Combined Blinn–Phong.</strong> Phong shading reveals both broad fold shading and brighter ridges in the Part 4 soft-cloth scene.</figcaption>
+      <img src="assets/part_5_phong_full_matched.png" width="2186" height="1284" alt="Two-pin cloth with broad shading and bright upper folds under full Phong">
+      <figcaption><strong>Combined Blinn–Phong.</strong> The full shader combines broad diffuse shading, brighter fold highlights, and the ambient base on the two-pin cloth.</figcaption>
     </figure>
-    <p>The combined example reuses the Part 4 <i>k</i><sub>s</sub> = 500 capture. Its scene and camera differ from the isolated views, so these images illustrate the lighting components without forming a matched four-view comparison.</p>
+    <p>I used <code>pinned2.json</code> for the new diffuse, specular, and full Phong views, with GUI density 15 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, and damping 0.2%. The ambient view is retained from an earlier capture. Framing and simulation progress are not identical, so the figures illustrate the lighting terms rather than a pixel-by-pixel decomposition of one frame.</p>
 
     <h3>Original camouflage texture</h3>
     <p>I generated <code>la_li_lu_le_lo_camo.png</code> as a 1024 × 1024 image in <code>generate_camo_texture.py</code>. Three layers of seeded periodic noise form broad organic patches in charcoal, forest green, olive, and khaki. A small periodic brightness variation adds a fabric-like weave. The generator creates the image from these functions, using no external artwork.</p>
@@ -290,17 +295,17 @@
     <p>I added a spatially varying wind force to deform the cloth sideways while it hangs from two pinned corners. The optional <code>wind_strength</code> field belongs inside the scene's <code>cloth</code> object and defaults to 0.0. A positive, finite value enables an additional force along +<i>Z</i> on each unpinned mass:</p>
     <p class="equation"><i>F</i><sub>z,wind</sub> = <i>m</i> × wind_strength × [1 + 0.5 sin(2π remainder(<i>x</i>, 1))]</p>
     <p>The remainder operation keeps the horizontal coordinate periodic before evaluating the sine. The force varies across the cloth as a function of position. It joins gravity and the spring forces in the damped Verlet update, so the cloth bends under the added load while the springs resist deformation. Pinned masses receive no wind force, and the position updates preserve their fixed locations. This is a simplified external-force model with a position-dependent field.</p>
-    <p>For the baseline, I used the original <code>pinned2.json</code>, which has wind disabled. For the wind experiment, I used a temporary scene outside the repository with <code>wind_strength</code> = 8.0 and the other scene parameters preserved. Both captures use the olive Custom shader described in Part 5 to make the surface shape visible.</p>
+    <p>For the baseline, I used <code>scene/pinned2.json</code>, which has wind disabled. For the wind-enabled view, I used the committed <code>scene/pinned2_wind.json</code> with <code>wind_strength</code> = 8.0. Both captures use the olive Custom shader, GUI density 15 g/cm², <i>k</i><sub>s</sub> = 5,000 N/m, and damping 0.2%.</p>
     <p>I included the same wind configuration in <code>scene/pinned2_wind.json</code>, with <code>wind_strength</code> = 8.0 and all other parameters preserved from <code>scene/pinned2.json</code>. To reproduce the wind demonstration, run <code>./build/sdk26/clothsim -r . -f scene/pinned2_wind.json</code> from the implementation repository root.</p>
     <figure>
-      <img src="assets/extra_manual_wind_baseline.png" width="2278" height="1318" alt="Custom-shaded cloth hanging from two pinned corners with wind disabled">
-      <figcaption><strong>Wind disabled.</strong> Original <code>pinned2.json</code>, wind strength 0.0. Folds gather below the pinned corners and across the upper drape.</figcaption>
+      <img src="assets/extra_credit_wind_off_matched.png" width="2236" height="1286" alt="Custom-shaded two-pin cloth with an upper fold and wind disabled">
+      <figcaption><strong>Wind disabled.</strong> <code>scene/pinned2.json</code>, wind strength 0.0. A pronounced fold runs beneath the upper edge.</figcaption>
     </figure>
     <figure>
-      <img src="assets/extra_manual_wind_enabled.png" width="2138" height="1140" alt="Custom-shaded cloth with broad diagonal deformation under wind strength 8.0">
-      <figcaption><strong>Wind enabled.</strong> Temporary two-pin scene, wind strength 8.0. Broad diagonal shading bands and the curved side edge show a different deformation.</figcaption>
+      <img src="assets/extra_credit_wind_on_matched.png" width="2222" height="1224" alt="Custom-shaded two-pin cloth with a broad curved surface under wind strength 8">
+      <figcaption><strong>Wind enabled.</strong> <code>scene/pinned2_wind.json</code>, wind strength 8.0. The cloth presents a broader curved surface with different shading and side contours.</figcaption>
     </figure>
-    <p>The baseline has a pronounced upper fold, while the wind-enabled view shows a broader diagonal deformation through the center. Camera framing differs and capture times were not recorded, so the figures illustrate the change in shape without measuring motion speed or displacement.</p>
+    <p>The wind-disabled view has a pronounced upper fold, while the wind-enabled view has a smoother upper band and a broader curved center. The added force acts along positive <i>Z</i>, but camera framing differs and frames were advanced manually. These captures illustrate the two configurations without measuring wind displacement or comparing identical simulation times.</p>
   </section>
   <section id="references">
     <h2>References</h2>
